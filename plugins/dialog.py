@@ -56,13 +56,35 @@ TIPS = {
               "Off by default: those parts must NOT be imported separately, "
               "because LightBurn centres each import and the shared origin is "
               "lost. Turn this on only to debug a bad export.",
-    "invert": "ON  -- burn the isolation moats around the copper, leaving the "
+    "mode_iso": "Ablate the copper BETWEEN the traces, leaving the traces "
+                "standing. This is the direct-ablation route and produces a "
+                "finished board straight off the laser.\n\n"
+                "The moat offset above controls how wide those gaps are cut.",
+    "mode_pos": "Ablate the trace shapes themselves, producing positive "
+                "artwork rather than the gaps.\n\n"
+                "This is for the fallback route: spray the board black, "
+                "ablate this pattern as an etch resist, then etch. The output "
+                "is a mask, NOT a finished board -- burning it expecting "
+                "isolation would remove exactly the copper you meant to keep.",
+    "_invert_old": "ON  -- burn the isolation moats around the copper, leaving the "
               "traces standing. This is direct copper ablation.\n\n"
               "OFF -- burn the copper shapes themselves, giving positive "
               "artwork for the spray-black / ablate-resist / etch fallback.\n\n"
               "These are opposites: running the wrong one will destroy a "
               "board.",
 }
+
+
+def _tip(ctrl, text):
+    """Set a tooltip on a control AND its children.
+
+    wx.SpinCtrlDouble is composite: on macOS the pointer sits over its inner
+    text field, which does not inherit the parent's tooltip, so a tip set only
+    on the control never appears.
+    """
+    ctrl.SetToolTip(text)
+    for kid in ctrl.GetChildren():
+        kid.SetToolTip(text)
 
 
 class SettingsDialog(wx.Dialog):
@@ -77,7 +99,9 @@ class SettingsDialog(wx.Dialog):
         grid = wx.FlexGridSizer(0, 2, 6, 8)
         grid.AddGrowableCol(1, 1)
 
-        grid.Add(wx.StaticText(self, label="Output folder"), 0, wx.ALIGN_CENTER_VERTICAL)
+        lbl_dir = wx.StaticText(self, label="Output folder")
+        lbl_dir.SetToolTip(TIPS["outdir"])
+        grid.Add(lbl_dir, 0, wx.ALIGN_CENTER_VERTICAL)
         row = wx.BoxSizer(wx.HORIZONTAL)
         self.dir_ctrl = wx.TextCtrl(self, value=default_dir, size=(560, -1))
         self.dir_ctrl.SetToolTip(TIPS["outdir"] + "\n\n" + default_dir)
@@ -89,16 +113,20 @@ class SettingsDialog(wx.Dialog):
         row.Add(browse, 0, wx.LEFT, 4)
         grid.Add(row, 1, wx.EXPAND)
 
-        grid.Add(wx.StaticText(self, label="Moat offset (mm)"), 0, wx.ALIGN_CENTER_VERTICAL)
+        lbl_off = wx.StaticText(self, label="Moat offset (mm)")
+        lbl_off.SetToolTip(TIPS["offset"])
+        grid.Add(lbl_off, 0, wx.ALIGN_CENTER_VERTICAL)
         self.offset = wx.SpinCtrlDouble(self, min=0.0, max=2.0, inc=0.01, initial=0.20)
         self.offset.SetDigits(2)
-        self.offset.SetToolTip(TIPS["offset"])
+        _tip(self.offset, TIPS["offset"])
         grid.Add(self.offset)
 
-        grid.Add(wx.StaticText(self, label="Frame margin (mm)"), 0, wx.ALIGN_CENTER_VERTICAL)
+        lbl_mar = wx.StaticText(self, label="Frame margin (mm)")
+        lbl_mar.SetToolTip(TIPS["margin"])
+        grid.Add(lbl_mar, 0, wx.ALIGN_CENTER_VERTICAL)
         self.margin = wx.SpinCtrlDouble(self, min=0.0, max=10.0, inc=0.5, initial=1.0)
         self.margin.SetDigits(1)
-        self.margin.SetToolTip(TIPS["margin"])
+        _tip(self.margin, TIPS["margin"])
         grid.Add(self.margin)
         pane.Add(grid, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM | wx.EXPAND, 10)
 
@@ -118,13 +146,34 @@ class SettingsDialog(wx.Dialog):
             box.Add(ctrl, 0, wx.ALL, 3)
         self.front.SetValue(True)
         self.back.SetValue(True)
+        self.maskf.SetValue(True)
+        self.maskb.SetValue(True)
         pane.Add(box, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
 
-        self.invert = wx.CheckBox(
-            self, label="Invert: cut isolation moats (uncheck for positive copper)")
-        self.invert.SetValue(True)
-        self.invert.SetToolTip(TIPS["invert"])
-        pane.Add(self.invert, 0, wx.ALL, 10)
+        mode = wx.StaticBoxSizer(wx.VERTICAL, self, "What the laser burns on the copper layer")
+        self.mode_iso = wx.RadioButton(
+            self, label="Around the traces \u2014 isolation moats",
+            style=wx.RB_GROUP)
+        iso_hint = wx.StaticText(
+            self, label="        Copper between traces is ablated away; the traces "
+                        "themselves survive.\n        This is direct copper ablation "
+                        "\u2014 the finished board.")
+        self.mode_pos = wx.RadioButton(
+            self, label="The traces themselves \u2014 positive copper")
+        pos_hint = wx.StaticText(
+            self, label="        Burns the trace shapes, not the gaps. For the "
+                        "spray-black / ablate-resist /\n        etch fallback \u2014 "
+                        "an etch mask, not a finished board.")
+        for h in (iso_hint, pos_hint):
+            h.SetForegroundColour(wx.SystemSettings.GetColour(wx.SYS_COLOUR_GRAYTEXT))
+        self.mode_iso.SetValue(True)
+        self.mode_iso.SetToolTip(TIPS["mode_iso"])
+        self.mode_pos.SetToolTip(TIPS["mode_pos"])
+        mode.Add(self.mode_iso, 0, wx.ALL, 3)
+        mode.Add(iso_hint, 0, wx.BOTTOM, 6)
+        mode.Add(self.mode_pos, 0, wx.ALL, 3)
+        mode.Add(pos_hint, 0, wx.BOTTOM, 3)
+        pane.Add(mode, 0, wx.ALL | wx.EXPAND, 10)
 
         self.keep = wx.CheckBox(self, label="Keep intermediate files (debugging)")
         self.keep.SetValue(False)
@@ -150,7 +199,7 @@ class SettingsDialog(wx.Dialog):
         return dict(
             outdir=self.dir_ctrl.GetValue(), offset_mm=self.offset.GetValue(),
             margin_mm=self.margin.GetValue(), do_front=self.front.GetValue(),
-            do_back=self.back.GetValue(), invert=self.invert.GetValue(),
+            do_back=self.back.GetValue(), invert=self.mode_iso.GetValue(),
             do_drills=self.drills.GetValue(), do_cuts=self.cuts.GetValue(),
             do_registration=self.reg.GetValue(),
             do_mask_f=self.maskf.GetValue(), do_mask_b=self.maskb.GetValue(),
