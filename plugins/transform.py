@@ -24,8 +24,13 @@ except ImportError:  # standalone / test use
 SVG_NS = "http://www.w3.org/2000/svg"
 ET.register_namespace("", SVG_NS)
 
-UNION_ACTIONS = ("select-all:all;object-to-path;object-stroke-to-path;"
-                 "selection-ungroup;path-union")
+# selection-ungroup removes only ONE nesting level. KiCad nests its plot in
+# several <g> layers, and mirroring adds another, so a single ungroup leaves
+# paths at different depths and path-union silently merges less than it should
+# (verified: 10 subpaths flat vs 20 with one ungroup). Repeat until flat --
+# the extra passes are no-ops once everything is at the top level.
+UNION_ACTIONS = ("select-all:all;object-to-path;object-stroke-to-path;" +
+                 "selection-ungroup;" * 6 + "path-union")
 DIFF_ACTIONS = "select-all:all;object-to-path;path-difference"
 
 
@@ -40,6 +45,27 @@ def _export(actions, out_name):
 def _paths(svg_file):
     root = ET.parse(svg_file).getroot()
     return root, root.findall(".//{%s}path" % SVG_NS)
+
+
+def mirror_x0(work, src, dst):
+    """Mirror about X=0 by wrapping content in scale(-1,1).
+
+    KiCad's SetMirror mirrors about the PAGE centre (verified: x -> page_w - x),
+    which does not match a physical left-right flip about the drill/place
+    origin. The fixture flow pins the blank and flips about X=0, so the back
+    artwork must mirror about X=0 too. Inkscape's object-to-path bakes this
+    transform into the geometry during the union stage.
+    """
+    tree = ET.parse(os.path.join(work, src))
+    root = tree.getroot()
+    kids = [k for k in list(root) if k.tag.startswith("{%s}" % SVG_NS)
+            and not k.tag.endswith("}defs")]
+    grp = ET.SubElement(root, "{%s}g" % SVG_NS, {"transform": "scale(-1,1)"})
+    for k in kids:
+        root.remove(k)
+        grp.append(k)
+    tree.write(os.path.join(work, dst))
+    return dst
 
 
 def union(work, src, dst):
@@ -149,12 +175,13 @@ def _validate(work, name, frame_rect, copper_subs):
 
 
 def isolate(src_path, dst_path, offset_mm=0.20, frame_rect=None,
-            margin_mm=2.0, invert=True):
+            margin_mm=2.0, invert=True, mirror=False):
     """Full pipeline. Returns a stats dict. Raises TransformError on trouble."""
     work = tempfile.mkdtemp(prefix="klb_")
     try:
         shutil.copyfile(src_path, os.path.join(work, "in.svg"))
-        union(work, "in.svg", "u.svg")
+        start = mirror_x0(work, "in.svg", "m.svg") if mirror else "in.svg"
+        union(work, start, "u.svg")
         _, _, copper_subs = _counts(work, "u.svg")
         dilate(work, "u.svg", "d.svg", offset_mm)
         if not invert:

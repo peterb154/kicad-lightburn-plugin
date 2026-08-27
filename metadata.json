@@ -1,0 +1,23 @@
+{
+  "$schema": "https://go.kicad.org/pcm/schemas/v1",
+  "name": "LightBurn Isolation Artwork",
+  "description": "Export laser-ready PCB isolation artwork for LightBurn",
+  "description_full": "Plots copper layers from the open board and converts them into isolation-moat artwork for a UV galvo laser, driven from LightBurn. Unions KiCad's stroked traces into fillable outlines, grows the copper by a configurable moat offset, and subtracts it from a board-sized frame so only the isolation regions burn. Can also emit positive copper artwork for a spray-and-etch workflow. Drills, edge cuts and registration holes are colour-separated onto their own LightBurn layers, all sharing the drill/place origin.",
+  "identifier": "com.github.peterb154.kicad-lightburn-plugin",
+  "type": "plugin",
+  "author": {
+    "name": "Brian Peterson",
+    "contact": { "web": "https://github.com/peterb154/kicad-lightburn-plugin" }
+  },
+  "license": "MIT",
+  "resources": {
+    "homepage": "https://github.com/peterb154/kicad-lightburn-plugin"
+  },
+  "versions": [
+    {
+      "version": "0.1.0",
+      "status": "development",
+      "kicad_version": "10.0"
+    }
+  ]
+}
