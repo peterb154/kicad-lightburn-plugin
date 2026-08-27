@@ -43,6 +43,10 @@ class LightburnIsolationPlugin(pcbnew.ActionPlugin):
 
     def Run(self):
         board = pcbnew.GetBoard()
+        if board is None:
+            wx.MessageBox("No board is open. Open a .kicad_pcb first.",
+                          "Nothing to export", wx.OK | wx.ICON_WARNING)
+            return
         try:
             inkscape.find_inkscape()
         except inkscape.InkscapeError as e:
