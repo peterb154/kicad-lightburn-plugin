@@ -8,18 +8,36 @@ the stroke is what LightBurn reads for layer assignment.
 import xml.etree.ElementTree as ET
 
 SVG_NS = "http://www.w3.org/2000/svg"
+INK_NS = "http://www.inkscape.org/namespaces/inkscape"
 ET.register_namespace("", SVG_NS)
+ET.register_namespace("inkscape", INK_NS)
 
 DRAWABLE = ("path", "rect", "circle", "ellipse", "line", "polyline", "polygon")
 
-# purpose -> (colour, filled)
+# purpose -> (colour, filled, LightBurn layer, human label)
+#
+# SVG itself has no layer concept, and LightBurn maps geometry to layers by
+# COLOUR only -- it ignores id, <title> and Inkscape's layer labels. So the
+# colours below are exact LightBurn palette entries, which is what makes the
+# layer assignment deterministic rather than whatever slot happens to be next.
+# The names are carried anyway so the file is legible in Inkscape and to a
+# human reading the XML.
 STYLES = {
-    "copper": ("#000000", True),
-    "drills": ("#FF0000", False),
-    "cuts":   ("#0000FF", False),
-    "fiducials": ("#00E000", False),
-    "mask": ("#FF00FF", True),
+    "copper":    ("#000000", True,  "C00", "Copper isolation"),
+    "cuts":      ("#0000FF", False, "C01", "Edge cuts"),
+    "drills":    ("#FF0000", False, "C02", "Drills"),
+    "fiducials": ("#00E000", False, "C03", "Registration holes"),
+    "mask":      ("#FF00FF", True,  "C07", "Solder mask openings"),
 }
+
+
+def layer_map(purposes):
+    """[(purpose, 'C00', 'Copper isolation')] for the purposes given."""
+    out = []
+    for p in purposes:
+        if p in STYLES:
+            out.append((p, STYLES[p][2], STYLES[p][3]))
+    return out
 
 
 def _style(colour, filled):
@@ -68,9 +86,16 @@ def combine(sources, dst):
     })
     counts = {}
     for purpose, path in sources:
-        colour, filled = STYLES.get(purpose, ("#000000", False))
-        grp = ET.SubElement(root, "{%s}g" % SVG_NS,
-                            {"id": "klb_" + purpose, "style": _style(colour, filled)})
+        colour, filled, lb_layer, label = STYLES.get(
+            purpose, ("#000000", False, "C00", purpose))
+        grp = ET.SubElement(root, "{%s}g" % SVG_NS, {
+            "id": "klb_" + purpose,
+            "style": _style(colour, filled),
+            "{%s}groupmode" % INK_NS: "layer",
+            "{%s}label" % INK_NS: "%s (%s)" % (label, lb_layer),
+        })
+        title = ET.SubElement(grp, "{%s}title" % SVG_NS)
+        title.text = "%s -- LightBurn %s" % (label, lb_layer)
         n = 0
         for el in list(ET.parse(path).getroot()):
             if not el.tag.startswith("{%s}" % SVG_NS):

@@ -118,7 +118,10 @@ def _build(board, opt, work, log):
 
         combined = os.path.join(work, "LB_%s.svg" % tag)
         _, counts = layers.combine(srcs, combined)
-        log("  -> %s  %s" % (os.path.basename(combined), counts))
+        log("  -> %s" % os.path.basename(combined))
+        for purpose, lb_layer, label in layers.layer_map([p for p, _ in srcs]):
+            log("       %-4s %-22s %d object(s)"
+                % (lb_layer, label, counts.get(purpose, 0)))
         finals.append(combined)
         produced.extend([p for _, p in srcs] + [combined])
 

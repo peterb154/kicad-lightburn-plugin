@@ -15,9 +15,22 @@ Built for a ComMarker Omni XE (355nm UV galvo) driven from LightBurn.
 3. **Frame** — injects a board-sized rect at the bottom of the z-order.
 4. **Difference** — frame minus copper leaves exactly the isolation regions.
 
-Output layers are colour-separated so LightBurn assigns each to its own layer:
-copper (black), solder mask openings (magenta), drills (red), edge cuts
-(blue), registration holes (green).
+Output layers are colour-separated. SVG has no native layer concept, and
+LightBurn maps geometry to layers by **colour** alone -- it ignores `id`,
+`<title>` and Inkscape's layer labels. So every colour here is an exact
+LightBurn palette entry, which is what makes the assignment deterministic:
+
+| Layer | Colour | LightBurn |
+|-------|---------|-----------|
+| Copper isolation | `#000000` | C00 |
+| Edge cuts | `#0000FF` | C01 |
+| Drills | `#FF0000` | C02 |
+| Registration holes | `#00E000` | C03 |
+| Solder mask openings | `#FF00FF` | C07 |
+
+The groups also carry `<title>` and Inkscape layer labels. LightBurn ignores
+both, but they make the file legible if you open it in Inkscape or read the
+XML. The export report lists which C-layer each output landed on.
 
 F.Mask / B.Mask are KiCad's *mask openings* -- the regions where solder mask
 is absent -- so they are emitted positive and with no moat offset, ready to
