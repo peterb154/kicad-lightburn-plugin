@@ -53,8 +53,7 @@ class LightburnIsolationPlugin(pcbnew.ActionPlugin):
             wx.MessageBox(str(e), "Inkscape not found", wx.OK | wx.ICON_ERROR)
             return
 
-        default_dir = os.path.dirname(board.GetFileName() or "") or os.path.expanduser("~")
-        dlg = dialog.SettingsDialog(None, default_dir)
+        dlg = dialog.SettingsDialog(None, export.default_outdir(board))
         if dlg.ShowModal() != wx.ID_OK:
             dlg.Destroy()
             return

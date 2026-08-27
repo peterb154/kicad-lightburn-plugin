@@ -41,6 +41,10 @@ ln -s "$PWD" ~/Documents/KiCad/10.0/3rdparty/plugins/kicad-lightburn-plugin
 
 Then **Tools → External Plugins → Refresh Plugins**.
 
+Output defaults to a `Production/` folder beside the board file, created on
+export. Change `DEFAULT_SUBDIR` in `plugins/export.py` to use a different
+convention.
+
 ## Importing into LightBurn
 
 **Import `LB_<side>.svg` — the combined file.** It holds all four

@@ -18,6 +18,10 @@ try:
 except ImportError:
     import plot, transform, drills, layers, inkscape
 
+# Output lands in this subfolder of the board's own directory, so it follows
+# whichever board is open rather than pointing at one fixed path.
+DEFAULT_SUBDIR = "Production"
+
 SIDES = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu}
 MASKS = {"F.Cu": pcbnew.F_Mask, "B.Cu": pcbnew.B_Mask}
 
@@ -138,6 +142,12 @@ def _share_page(finals, produced, log):
             layers.set_canvas(f, box)
     log("Shared page: %.2f x %.2f mm, origin at page centre X"
         % (box[2], box[3]))
+
+
+def default_outdir(board):
+    """<board dir>/Production, or ~ if the board has never been saved."""
+    base = os.path.dirname(board.GetFileName() or "") if board else ""
+    return os.path.join(base or os.path.expanduser("~"), DEFAULT_SUBDIR)
 
 
 def resolve_outdir(board, raw):

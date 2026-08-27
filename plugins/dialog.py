@@ -12,6 +12,8 @@ INTRO = ("Plots the board's copper and turns it into laser artwork for "
 
 TIPS = {
     "outdir": "Folder the SVGs are written to.\n\n"
+              "Defaults to a Production folder beside the board file, so it "
+              "follows whichever board is open.\n\n"
               "Created if it does not exist. ~ and $VARS are expanded, and a "
               "relative path is taken as relative to the board file -- not to "
               "wherever KiCad was launched from. Existing files with the same "
