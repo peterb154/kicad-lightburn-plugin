@@ -38,7 +38,10 @@ Then **Tools → External Plugins → Refresh Plugins**.
 ## Importing into LightBurn
 
 **Import `LB_<side>.svg` — the combined file.** It holds all four
-colour-separated layers already registered against the drill/place origin.
+colour-separated layers already registered against the drill/place origin,
+and it is the only thing the export writes. Intermediates are built in a temp
+directory and discarded; tick *Keep intermediate files* to keep them for
+debugging.
 
 LightBurn centres imported files on the workspace by default, so importing the
 individual per-layer SVGs separately places each one independently and throws

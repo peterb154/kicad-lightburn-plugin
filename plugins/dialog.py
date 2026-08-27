@@ -5,7 +5,10 @@ import wx
 
 INTRO = ("Plots the board's copper and turns it into laser artwork for "
          "LightBurn. Each output kind gets its own colour so LightBurn "
-         "assigns it to a separate layer. Hover any field for details.")
+         "assigns it to a separate layer.\n"
+         "Import the single LB_<side>.svg it writes -- LightBurn centres "
+         "each import, so importing parts separately loses the shared "
+         "origin. Hover any field for details.")
 
 TIPS = {
     "outdir": "Folder the SVGs are written to.\n\n"
@@ -39,6 +42,11 @@ TIPS = {
               "registration features and put on their own layer (green).\n\n"
               "Cut these first and pin the blank before the isolation pass, "
               "so it cannot shift mid-burn or between sides.",
+    "keep":   "Also write the intermediate SVGs (raw plots, per-layer parts) "
+              "next to the combined file.\n\n"
+              "Off by default: those parts must NOT be imported separately, "
+              "because LightBurn centres each import and the shared origin is "
+              "lost. Turn this on only to debug a bad export.",
     "invert": "ON  -- burn the isolation moats around the copper, leaving the "
               "traces standing. This is direct copper ablation.\n\n"
               "OFF -- burn the copper shapes themselves, giving positive "
@@ -107,6 +115,11 @@ class SettingsDialog(wx.Dialog):
         self.invert.SetToolTip(TIPS["invert"])
         pane.Add(self.invert, 0, wx.ALL, 10)
 
+        self.keep = wx.CheckBox(self, label="Keep intermediate files (debugging)")
+        self.keep.SetValue(False)
+        self.keep.SetToolTip(TIPS["keep"])
+        pane.Add(self.keep, 0, wx.LEFT | wx.RIGHT | wx.BOTTOM, 10)
+
         btns = self.CreateButtonSizer(wx.OK | wx.CANCEL)
         if btns:
             pane.Add(btns, 0, wx.ALL | wx.ALIGN_RIGHT, 10)
@@ -128,4 +141,5 @@ class SettingsDialog(wx.Dialog):
             margin_mm=self.margin.GetValue(), do_front=self.front.GetValue(),
             do_back=self.back.GetValue(), invert=self.invert.GetValue(),
             do_drills=self.drills.GetValue(), do_cuts=self.cuts.GetValue(),
-            do_registration=self.reg.GetValue())
+            do_registration=self.reg.GetValue(),
+            keep_intermediates=self.keep.GetValue())
