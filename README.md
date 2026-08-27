@@ -68,6 +68,10 @@ Inspired by [Bromus365/Kicad_Lightburn_Plugin](https://github.com/Bromus365/Kica
 (MIT), which covers the plot-and-union path on Windows. The isolation
 inversion, moat offset, X=0 mirroring and layer separation here are new.
 
+The toolbar icon is LightBurn's own application icon, used to mark this as a
+LightBurn integration. LightBurn and its logo are trademarks of LightBurn
+Software LLC; that mark is not covered by this project's MIT licence.
+
 ## Licence
 
 MIT
