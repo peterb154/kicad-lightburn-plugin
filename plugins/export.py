@@ -123,12 +123,43 @@ def _share_page(finals, produced, log):
         % (box[2], box[3]))
 
 
+def resolve_outdir(board, raw):
+    """Normalise a typed output path and create it.
+
+    A typed path may carry surrounding whitespace, a ~, an env var, or be
+    relative. os.makedirs expands none of those: "~/out" creates a directory
+    literally named "~" in the process cwd, and a relative path lands wherever
+    KiCad happens to be running from -- both look to the user like the folder
+    was never created.
+    """
+    path = (raw or "").strip()
+    if not path:
+        raise transform.TransformError("No output folder given.")
+    path = os.path.expanduser(os.path.expandvars(path))
+    if not os.path.isabs(path):
+        base = os.path.dirname(board.GetFileName() or "") or os.getcwd()
+        path = os.path.join(base, path)
+    path = os.path.normpath(path)
+    if os.path.exists(path) and not os.path.isdir(path):
+        raise transform.TransformError(
+            "Output path is a file, not a folder:\n" + path)
+    try:
+        if not os.path.isdir(path):
+            os.makedirs(path)
+    except OSError as e:
+        raise transform.TransformError(
+            "Could not create the output folder:\n%s\n\n%s" % (path, e))
+    if not os.access(path, os.W_OK):
+        raise transform.TransformError("Output folder is not writable:\n" + path)
+    return path
+
+
 def run(board, opt, log=None):
     log = log or (lambda m: None)
     if not (opt.do_front or opt.do_back):
         raise transform.TransformError("No copper layer selected.")
-    if not os.path.isdir(opt.outdir):
-        os.makedirs(opt.outdir)
+    opt.outdir = resolve_outdir(board, opt.outdir)
+    log("Output folder: " + opt.outdir)
 
     work = tempfile.mkdtemp(prefix="klb_out_")
     try:

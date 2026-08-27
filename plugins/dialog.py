@@ -12,8 +12,10 @@ INTRO = ("Plots the board's copper and turns it into laser artwork for "
 
 TIPS = {
     "outdir": "Folder the SVGs are written to.\n\n"
-              "Defaults to the folder holding the .kicad_pcb. Existing files "
-              "with the same names are overwritten.",
+              "Created if it does not exist. ~ and $VARS are expanded, and a "
+              "relative path is taken as relative to the board file -- not to "
+              "wherever KiCad was launched from. Existing files with the same "
+              "names are overwritten.",
     "offset": "How far the isolation moat is grown outward from the copper "
               "edge, in millimetres.\n\n"
               "This is the knob for your laser kerf -- it does not touch the "
