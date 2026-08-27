@@ -82,3 +82,24 @@ def combine(sources, dst):
         counts[purpose] = n
     ET.ElementTree(root).write(dst, xml_declaration=True, encoding="utf-8")
     return dst, counts
+
+
+def set_canvas(svg_path, box_mm):
+    """Retarget an SVG's page onto box_mm without moving any geometry.
+
+    KiCad plots onto its page (A4 by default), which leaves the artwork at
+    negative coordinates far from the page origin. LightBurn centres imports
+    on the workspace by default, and a Shift-import -- which preserves file
+    coordinates -- would then drop the artwork off-page. Giving every emitted
+    file the SAME page, tight around the artwork, makes both routes land
+    consistently. Only the viewBox moves; path data is untouched, so the
+    shared drill/place origin is preserved.
+    """
+    x, y, w, h = box_mm
+    tree = ET.parse(svg_path)
+    root = tree.getroot()
+    root.set("width", "%.6fmm" % w)
+    root.set("height", "%.6fmm" % h)
+    root.set("viewBox", "%.6f %.6f %.6f %.6f" % (x, y, w, h))
+    tree.write(svg_path, xml_declaration=True, encoding="utf-8")
+    return box_mm

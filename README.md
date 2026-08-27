@@ -35,6 +35,25 @@ ln -s "$PWD" ~/Documents/KiCad/10.0/3rdparty/plugins/kicad-lightburn-plugin
 
 Then **Tools → External Plugins → Refresh Plugins**.
 
+## Importing into LightBurn
+
+**Import `LB_<side>.svg` — the combined file.** It holds all four
+colour-separated layers already registered against the drill/place origin.
+
+LightBurn centres imported files on the workspace by default, so importing the
+individual per-layer SVGs separately places each one independently and throws
+the shared origin away. Two ways round it:
+
+- Import the single `LB_*.svg`. Centring then moves every layer together and
+  registration survives.
+- Or hold **Shift** while importing, which preserves the file's coordinates
+  instead of centring.
+
+Every file this plugin writes is given the same page, sized to the artwork and
+symmetric about X=0, so a Shift-import lands on-page and the front and mirrored
+back land in the same place. Only the viewBox is retargeted; no path data
+moves, so the shared origin is intact either way.
+
 ## Notes from building this
 
 Three things that are easy to get wrong, all verified against a real board:
