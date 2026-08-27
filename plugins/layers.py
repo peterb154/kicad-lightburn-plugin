@@ -28,6 +28,28 @@ def _style(colour, filled):
     return "fill:none;stroke:%s;stroke-width:0.1" % colour
 
 
+SKIP = ("defs", "namedview", "metadata", "title", "desc")
+
+
+def _strip_paint(el):
+    """Drop per-element paint so the layer group's colour is inherited.
+
+    Transforms are left alone: an ancestor <g transform=...> is what carries
+    the back-side X=0 mirror, and flattening elements out of it silently
+    un-mirrors the artwork.
+    """
+    el.attrib.pop("style", None)
+    el.attrib.pop("fill", None)
+    el.attrib.pop("stroke", None)
+    for kid in el:
+        _strip_paint(kid)
+
+
+def _count(el):
+    n = 1 if el.tag.split("}")[-1] in DRAWABLE else 0
+    return n + sum(_count(k) for k in el)
+
+
 def combine(sources, dst):
     """sources: [(purpose, svg_path)] -> one multi-colour SVG.
 
@@ -49,14 +71,14 @@ def combine(sources, dst):
         grp = ET.SubElement(root, "{%s}g" % SVG_NS,
                             {"id": "klb_" + purpose, "style": _style(colour, filled)})
         n = 0
-        src = ET.parse(path).getroot()
-        for tag in DRAWABLE:
-            for el in src.iter("{%s}%s" % (SVG_NS, tag)):
-                el.attrib.pop("style", None)   # inherit the group's colour
-                el.attrib.pop("fill", None)
-                el.attrib.pop("stroke", None)
-                grp.append(el)
-                n += 1
+        for el in list(ET.parse(path).getroot()):
+            if not el.tag.startswith("{%s}" % SVG_NS):
+                continue
+            if el.tag.split("}")[-1] in SKIP:
+                continue
+            _strip_paint(el)
+            grp.append(el)          # keeps the subtree, and its transforms
+            n += _count(el)
         counts[purpose] = n
     ET.ElementTree(root).write(dst, xml_declaration=True, encoding="utf-8")
     return dst, counts
