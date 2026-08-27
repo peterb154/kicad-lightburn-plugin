@@ -44,6 +44,13 @@ TIPS = {
               "registration features and put on their own layer (green).\n\n"
               "Cut these first and pin the blank before the isolation pass, "
               "so it cannot shift mid-burn or between sides.",
+    "maskf":  "Emit the F.Cu solder mask OPENINGS on their own layer "
+              "(magenta), for ablating mask off a coated board.\n\n"
+              "KiCad's F.Mask layer already describes where mask is absent, "
+              "so it is used as-is -- positive, and with no moat offset, "
+              "because the opening should match the pad.",
+    "maskb":  "Same as F.Mask removal, for the back side. Mirrored about X=0 "
+              "along with the rest of the back artwork.",
     "keep":   "Also write the intermediate SVGs (raw plots, per-layer parts) "
               "next to the combined file.\n\n"
               "Off by default: those parts must NOT be imported separately, "
@@ -101,14 +108,16 @@ class SettingsDialog(wx.Dialog):
         self.drills = wx.CheckBox(self, label="Drills (own LightBurn layer)")
         self.cuts = wx.CheckBox(self, label="Edge.Cuts (own LightBurn layer)")
         self.reg = wx.CheckBox(self, label="Registration holes (own layer)")
+        self.maskf = wx.CheckBox(self, label="F.Mask removal (own layer)")
+        self.maskb = wx.CheckBox(self, label="B.Mask removal (own layer)")
         for ctrl, key in ((self.front, "front"), (self.back, "back"),
                           (self.drills, "drills"), (self.cuts, "cuts"),
-                          (self.reg, "reg")):
+                          (self.reg, "reg"), (self.maskf, "maskf"),
+                          (self.maskb, "maskb")):
             ctrl.SetToolTip(TIPS[key])
             box.Add(ctrl, 0, wx.ALL, 3)
         self.front.SetValue(True)
-        for c in (self.drills, self.cuts, self.reg):
-            c.SetValue(True)
+        self.back.SetValue(True)
         pane.Add(box, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
 
         self.invert = wx.CheckBox(
@@ -144,4 +153,5 @@ class SettingsDialog(wx.Dialog):
             do_back=self.back.GetValue(), invert=self.invert.GetValue(),
             do_drills=self.drills.GetValue(), do_cuts=self.cuts.GetValue(),
             do_registration=self.reg.GetValue(),
+            do_mask_f=self.maskf.GetValue(), do_mask_b=self.maskb.GetValue(),
             keep_intermediates=self.keep.GetValue())

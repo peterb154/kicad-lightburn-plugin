@@ -18,6 +18,7 @@ STYLES = {
     "drills": ("#FF0000", False),
     "cuts":   ("#0000FF", False),
     "fiducials": ("#00E000", False),
+    "mask": ("#FF00FF", True),
 }
 
 

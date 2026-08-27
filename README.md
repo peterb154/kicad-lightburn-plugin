@@ -16,7 +16,13 @@ Built for a ComMarker Omni XE (355nm UV galvo) driven from LightBurn.
 4. **Difference** — frame minus copper leaves exactly the isolation regions.
 
 Output layers are colour-separated so LightBurn assigns each to its own layer:
-copper (black), drills (red), edge cuts (blue), registration holes (green).
+copper (black), solder mask openings (magenta), drills (red), edge cuts
+(blue), registration holes (green).
+
+F.Mask / B.Mask are KiCad's *mask openings* -- the regions where solder mask
+is absent -- so they are emitted positive and with no moat offset, ready to
+ablate mask off a coated board. They mirror with the rest of the back
+artwork.
 
 Uncheck **Invert** to emit positive copper artwork instead, for a
 spray-black / ablate-resist / etch workflow.

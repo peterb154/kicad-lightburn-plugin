@@ -19,12 +19,14 @@ except ImportError:
     import plot, transform, drills, layers, inkscape
 
 SIDES = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu}
+MASKS = {"F.Cu": pcbnew.F_Mask, "B.Cu": pcbnew.B_Mask}
 
 
 class Options(object):
     def __init__(self, outdir, offset_mm=0.20, margin_mm=1.0, do_front=True,
-                 do_back=False, invert=True, do_drills=True, do_cuts=True,
-                 do_registration=True, keep_intermediates=False):
+                 do_back=True, invert=True, do_drills=False, do_cuts=False,
+                 do_registration=False, do_mask_f=False, do_mask_b=False,
+                 keep_intermediates=False):
         self.outdir = outdir
         self.offset_mm = offset_mm
         self.margin_mm = margin_mm
@@ -34,6 +36,8 @@ class Options(object):
         self.do_drills = do_drills
         self.do_cuts = do_cuts
         self.do_registration = do_registration
+        self.do_mask_f = do_mask_f
+        self.do_mask_b = do_mask_b
         self.keep_intermediates = keep_intermediates
 
 
@@ -71,6 +75,19 @@ def _build(board, opt, work, log):
                st["subpaths"], st["copper_subpaths"]))
 
         srcs = [("copper", art)]
+        if (opt.do_mask_f if name == "F.Cu" else opt.do_mask_b):
+            # F.Mask/B.Mask are the mask OPENINGS -- the regions to ablate off
+            # a coated board -- so they are used positive, with no moat offset.
+            raw_mask = plot.plot_layer(board, MASKS[name], work, tag + "_Mask")
+            produced.append(raw_mask)
+            mask_art = os.path.join(work, tag + "_mask.svg")
+            try:
+                mst = transform.isolate(raw_mask, mask_art, 0.0,
+                                        invert=False, mirror=mirror)
+                srcs.append(("mask", mask_art))
+                log("  solder mask: %d openings" % mst["subpaths"])
+            except transform.TransformError:
+                log("  solder mask: no openings on this side, layer skipped")
         if opt.do_drills or opt.do_registration:
             inside, reg = drills.partition(board, frame)
             if opt.do_drills and inside:
