@@ -47,7 +47,10 @@ def run(board, opt, log=None):
         if not do_it:
             continue
         tag = name.replace(".", "_")
-        raw = plot.plot_layer(board, SIDES[name], opt.outdir, tag, mirror=mirror)
+        # Always plot UNMIRRORED. KiCad's SetMirror flips about the page
+        # centre, not X=0; the X=0 flip is applied inside transform.isolate.
+        # Doing both would double-mirror the copper off the frame entirely.
+        raw = plot.plot_layer(board, SIDES[name], opt.outdir, tag, mirror=False)
         art = os.path.join(opt.outdir, "%s_%s.svg" %
                            (tag, "iso" if opt.invert else "positive"))
         fr = frame
@@ -76,7 +79,14 @@ def run(board, opt, log=None):
                 srcs.append(("fiducials", d))
                 log("  registration: %d holes outside the board outline" % n)
         if cuts_svg:
-            srcs.append(("cuts", cuts_svg))
+            # Cutting the outline from the back means the cut path must be
+            # mirrored about X=0 too, or it will not register with the flip.
+            if mirror:
+                cuts_svg_side = os.path.join(opt.outdir, tag + "_cuts.svg")
+                transform.mirror_file(cuts_svg, cuts_svg_side)
+            else:
+                cuts_svg_side = cuts_svg
+            srcs.append(("cuts", cuts_svg_side))
 
         combined = os.path.join(opt.outdir, "LB_%s.svg" % tag)
         _, counts = layers.combine(srcs, combined)

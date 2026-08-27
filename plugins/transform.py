@@ -68,6 +68,26 @@ def mirror_x0(work, src, dst):
     return dst
 
 
+def mirror_file(src_path, dst_path):
+    """Mirror a whole SVG about X=0 in place of a union.
+
+    Used for line artwork (edge cuts) that must NOT be stroke-to-path'd: the
+    outline is cut along its centreline, so turning it into a filled outline
+    would be wrong. The transform is left on the group; LightBurn applies it
+    on import.
+    """
+    tree = ET.parse(src_path)
+    root = tree.getroot()
+    kids = [k for k in list(root) if k.tag.startswith("{%s}" % SVG_NS)
+            and not k.tag.endswith("}defs")]
+    grp = ET.SubElement(root, "{%s}g" % SVG_NS, {"transform": "scale(-1,1)"})
+    for k in kids:
+        root.remove(k)
+        grp.append(k)
+    tree.write(dst_path)
+    return dst_path
+
+
 def union(work, src, dst):
     inkscape.run_actions(work, src, _export(UNION_ACTIONS, dst))
     _, paths = _paths(os.path.join(work, dst))
