@@ -24,13 +24,14 @@ DEFAULT_SUBDIR = "Production"
 
 SIDES = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu}
 MASKS = {"F.Cu": pcbnew.F_Mask, "B.Cu": pcbnew.B_Mask}
+SILKS = {"F.Cu": pcbnew.F_SilkS, "B.Cu": pcbnew.B_SilkS}
 
 
 class Options(object):
     def __init__(self, outdir, offset_mm=0.20, margin_mm=1.0, do_front=True,
                  do_back=True, invert=True, do_drills=False, do_cuts=False,
                  do_registration=False, do_mask_f=False, do_mask_b=False,
-                 keep_intermediates=False):
+                 do_silk_f=False, do_silk_b=False, keep_intermediates=False):
         self.outdir = outdir
         self.offset_mm = offset_mm
         self.margin_mm = margin_mm
@@ -42,6 +43,8 @@ class Options(object):
         self.do_registration = do_registration
         self.do_mask_f = do_mask_f
         self.do_mask_b = do_mask_b
+        self.do_silk_f = do_silk_f
+        self.do_silk_b = do_silk_b
         self.keep_intermediates = keep_intermediates
 
 
@@ -92,6 +95,20 @@ def _build(board, opt, work, log):
                 log("  solder mask: %d openings" % mst["subpaths"])
             except transform.TransformError:
                 log("  solder mask: no openings on this side, layer skipped")
+        if (opt.do_silk_f if name == "F.Cu" else opt.do_silk_b):
+            # Silkscreen is marked positive, like the mask openings. The union
+            # turns stroked lines and stroke-font text into fillable outlines.
+            raw_silk = plot.plot_layer(board, SILKS[name], work, tag + "_Silk",
+                                       silk=True)
+            produced.append(raw_silk)
+            silk_art = os.path.join(work, tag + "_silk.svg")
+            try:
+                sst = transform.isolate(raw_silk, silk_art, 0.0,
+                                        invert=False, mirror=mirror)
+                srcs.append(("silk", silk_art))
+                log("  silkscreen: %d subpaths" % sst["subpaths"])
+            except transform.TransformError:
+                log("  silkscreen: nothing on this side, layer skipped")
         if opt.do_drills or opt.do_registration:
             inside, reg = drills.partition(board, frame)
             if opt.do_drills and inside:
