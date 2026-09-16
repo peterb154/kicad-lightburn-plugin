@@ -65,8 +65,8 @@ convention.
 
 ## Importing into LightBurn
 
-**Import `LB_<side>.svg` — the combined file.** It holds all four
-colour-separated layers already registered against the drill/place origin,
+**Import `LB_<side>.svg` — the combined file.** It holds every
+colour-separated layer already registered against the drill/place origin,
 and it is the only thing the export writes. Intermediates are built in a temp
 directory and discarded; tick *Keep intermediate files* to keep them for
 debugging.

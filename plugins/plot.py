@@ -39,18 +39,19 @@ def board_frame_mm(board, margin_mm=0.0):
     return (x - margin_mm, y - margin_mm, w + 2 * margin_mm, h + 2 * margin_mm)
 
 
-def plot_layer(board, layer_id, outdir, suffix, mirror=False, silk=False):
+def plot_layer(board, layer_id, outdir, suffix, mirror=False):
     """Plot one layer to SVG. Returns the file path.
 
-    silk=True plots reference designators, which live on the silkscreen, and
-    clips silk out of mask openings so marking never lands on a bare pad.
+    Silkscreen plots keep the text fields placed on them (refs, values) and
+    are clipped out of mask openings, so marking never lands on a bare pad.
     """
+    silk = layer_id in (pcbnew.F_SilkS, pcbnew.B_SilkS)
     ctl = pcbnew.PLOT_CONTROLLER(board)
     opt = ctl.GetPlotOptions()
     opt.SetOutputDirectory(outdir)
     opt.SetUseAuxOrigin(True)      # share the drill/place datum
     opt.SetPlotFrameRef(False)     # no page border
-    opt.SetPlotValue(False)
+    opt.SetPlotValue(silk)
     opt.SetPlotReference(silk)
     opt.SetSubtractMaskFromSilk(silk)
     opt.SetMirror(mirror)
