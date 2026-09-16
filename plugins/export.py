@@ -24,13 +24,14 @@ DEFAULT_SUBDIR = "Production"
 
 SIDES = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu}
 MASKS = {"F.Cu": pcbnew.F_Mask, "B.Cu": pcbnew.B_Mask}
+SILKS = {"F.Cu": pcbnew.F_SilkS, "B.Cu": pcbnew.B_SilkS}
 
 
 class Options(object):
     def __init__(self, outdir, offset_mm=0.20, margin_mm=1.0, do_front=True,
                  do_back=True, invert=True, do_drills=False, do_cuts=False,
                  do_registration=False, do_mask_f=False, do_mask_b=False,
-                 keep_intermediates=False):
+                 do_silk_f=False, do_silk_b=False, keep_intermediates=False):
         self.outdir = outdir
         self.offset_mm = offset_mm
         self.margin_mm = margin_mm
@@ -42,7 +43,30 @@ class Options(object):
         self.do_registration = do_registration
         self.do_mask_f = do_mask_f
         self.do_mask_b = do_mask_b
+        self.do_silk_f = do_silk_f
+        self.do_silk_b = do_silk_b
         self.keep_intermediates = keep_intermediates
+
+
+def _positive_layer(board, layer_id, work, tag, purpose, mirror, produced,
+                    log, label):
+    """Plot a layer as positive artwork with no moat offset.
+
+    Returns the SVG path, or None when the side has nothing on that layer.
+    """
+    raw = plot.plot_layer(board, layer_id, work, "%s_%s" % (tag, purpose))
+    produced.append(raw)
+    art = os.path.join(work, "%s_%s.svg" % (tag, purpose))
+    try:
+        st = transform.isolate(raw, art, 0.0, invert=False, mirror=mirror)
+    except transform.TransformError:
+        # With invert=False, isolate only raises when the union finds no
+        # geometry -- i.e. the layer is empty on this side. Revisit this if
+        # isolate grows other checks on the positive path.
+        log("  %s: nothing on this side, layer skipped" % label)
+        return None
+    log("  %s: %d subpaths" % (label, st["subpaths"]))
+    return art
 
 
 def _build(board, opt, work, log):
@@ -79,19 +103,17 @@ def _build(board, opt, work, log):
                st["subpaths"], st["copper_subpaths"]))
 
         srcs = [("copper", art)]
-        if (opt.do_mask_f if name == "F.Cu" else opt.do_mask_b):
-            # F.Mask/B.Mask are the mask OPENINGS -- the regions to ablate off
-            # a coated board -- so they are used positive, with no moat offset.
-            raw_mask = plot.plot_layer(board, MASKS[name], work, tag + "_Mask")
-            produced.append(raw_mask)
-            mask_art = os.path.join(work, tag + "_mask.svg")
-            try:
-                mst = transform.isolate(raw_mask, mask_art, 0.0,
-                                        invert=False, mirror=mirror)
-                srcs.append(("mask", mask_art))
-                log("  solder mask: %d openings" % mst["subpaths"])
-            except transform.TransformError:
-                log("  solder mask: no openings on this side, layer skipped")
+        # F.Mask/B.Mask are the mask OPENINGS -- the regions to ablate off a
+        # coated board. Silkscreen is marked as drawn. Both are positive.
+        extras = (("mask", MASKS, opt.do_mask_f, opt.do_mask_b, "solder mask"),
+                  ("silk", SILKS, opt.do_silk_f, opt.do_silk_b, "silkscreen"))
+        for purpose, layer_ids, do_f, do_b, label in extras:
+            if not (do_f if name == "F.Cu" else do_b):
+                continue
+            extra = _positive_layer(board, layer_ids[name], work, tag, purpose,
+                                    mirror, produced, log, label)
+            if extra:
+                srcs.append((purpose, extra))
         if opt.do_drills or opt.do_registration:
             inside, reg = drills.partition(board, frame)
             if opt.do_drills and inside:

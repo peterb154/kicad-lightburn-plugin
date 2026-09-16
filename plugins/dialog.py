@@ -53,6 +53,13 @@ TIPS = {
               "because the opening should match the pad.",
     "maskb":  "Same as F.Mask removal, for the back side. Mirrored about X=0 "
               "along with the rest of the back artwork.",
+    "silkf":  "Emit the F.Silkscreen artwork on its own layer (cyan), for "
+              "marking legends onto the board.\n\n"
+              "Burned positive with no moat offset. Reference designators are "
+              "included, and silk is clipped out of mask openings so it never "
+              "marks a bare pad.",
+    "silkb":  "Same as F.Silkscreen, for the back side. Mirrored about X=0 "
+              "along with the rest of the back artwork.",
     "keep":   "Also write the intermediate SVGs (raw plots, per-layer parts) "
               "next to the combined file.\n\n"
               "Off by default: those parts must NOT be imported separately, "
@@ -140,10 +147,13 @@ class SettingsDialog(wx.Dialog):
         self.reg = wx.CheckBox(self, label="Registration holes (own layer)")
         self.maskf = wx.CheckBox(self, label="F.Mask removal (own layer)")
         self.maskb = wx.CheckBox(self, label="B.Mask removal (own layer)")
+        self.silkf = wx.CheckBox(self, label="F.Silkscreen (own layer)")
+        self.silkb = wx.CheckBox(self, label="B.Silkscreen (own layer)")
         for ctrl, key in ((self.front, "front"), (self.back, "back"),
                           (self.drills, "drills"), (self.cuts, "cuts"),
                           (self.reg, "reg"), (self.maskf, "maskf"),
-                          (self.maskb, "maskb")):
+                          (self.maskb, "maskb"), (self.silkf, "silkf"),
+                          (self.silkb, "silkb")):
             ctrl.SetToolTip(TIPS[key])
             box.Add(ctrl, 0, wx.ALL, 3)
         self.front.SetValue(True)
@@ -205,4 +215,5 @@ class SettingsDialog(wx.Dialog):
             do_drills=self.drills.GetValue(), do_cuts=self.cuts.GetValue(),
             do_registration=self.reg.GetValue(),
             do_mask_f=self.maskf.GetValue(), do_mask_b=self.maskb.GetValue(),
+            do_silk_f=self.silkf.GetValue(), do_silk_b=self.silkb.GetValue(),
             keep_intermediates=self.keep.GetValue())

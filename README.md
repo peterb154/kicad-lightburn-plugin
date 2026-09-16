@@ -26,6 +26,7 @@ LightBurn palette entry, which is what makes the assignment deterministic:
 | Edge cuts | `#0000FF` | C01 |
 | Drills | `#FF0000` | C02 |
 | Registration holes | `#00E000` | C03 |
+| Silkscreen | `#00E0E0` | C06 |
 | Solder mask openings | `#FF00FF` | C07 |
 
 The groups also carry `<title>` and Inkscape layer labels. LightBurn ignores
@@ -36,6 +37,10 @@ F.Mask / B.Mask are KiCad's *mask openings* -- the regions where solder mask
 is absent -- so they are emitted positive and with no moat offset, ready to
 ablate mask off a coated board. They mirror with the rest of the back
 artwork.
+
+F.Silkscreen / B.Silkscreen are also emitted positive with no offset, for
+marking legends. Reference designators are plotted, and silk is clipped out
+of mask openings so it never marks a bare pad. Both are off by default.
 
 Uncheck **Invert** to emit positive copper artwork instead, for a
 spray-black / ablate-resist / etch workflow.
@@ -60,8 +65,8 @@ convention.
 
 ## Importing into LightBurn
 
-**Import `LB_<side>.svg` — the combined file.** It holds all four
-colour-separated layers already registered against the drill/place origin,
+**Import `LB_<side>.svg` — the combined file.** It holds every
+colour-separated layer already registered against the drill/place origin,
 and it is the only thing the export writes. Intermediates are built in a temp
 directory and discarded; tick *Keep intermediate files* to keep them for
 debugging.

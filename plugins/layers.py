@@ -27,6 +27,7 @@ STYLES = {
     "cuts":      ("#0000FF", False, "C01", "Edge cuts"),
     "drills":    ("#FF0000", False, "C02", "Drills"),
     "fiducials": ("#00E000", False, "C03", "Registration holes"),
+    "silk":      ("#00E0E0", True,  "C06", "Silkscreen"),
     "mask":      ("#FF00FF", True,  "C07", "Solder mask openings"),
 }
 
